@@ -24,7 +24,7 @@ namespace IndigoBlueSplitBot {
             client.Log += OnLogRecieved;
             commands.Log += OnLogRecieved;
             
-            await client.LoginAsync(TokenType.Bot, "OTY5OTM3MTk0MDk5ODA2MjM4.Ym0qZw.m7B4v4jRKdZVSu2uKSwS0GQi3SI");
+            await client.LoginAsync(TokenType.Bot, "token");
             await client.StartAsync();
             
             client.MessageReceived += OnMessageReceived;
