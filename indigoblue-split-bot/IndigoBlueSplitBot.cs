@@ -14,16 +14,17 @@ namespace IndigoBlueSplitBot {
         
         public async Task Main() {
             client = new DiscordSocketClient(new DiscordSocketConfig() {
-                LogLevel = LogSeverity.Verbose
+                LogLevel = LogSeverity.Verbose,
+                AlwaysDownloadUsers = true,
             });
             commands = new CommandService(new CommandServiceConfig() {
-                LogLevel = LogSeverity.Verbose
+                LogLevel = LogSeverity.Verbose,
             });
             
             client.Log += OnLogRecieved;
             commands.Log += OnLogRecieved;
             
-            await client.LoginAsync(TokenType.Bot, "token");
+            await client.LoginAsync(TokenType.Bot, "OTY5OTM3MTk0MDk5ODA2MjM4.Ym0qZw.m7B4v4jRKdZVSu2uKSwS0GQi3SI");
             await client.StartAsync();
             
             client.MessageReceived += OnMessageReceived;
@@ -52,17 +53,20 @@ namespace IndigoBlueSplitBot {
         
         private async Task OnButtonExecuted(SocketMessageComponent component) {
             switch(component.Data.CustomId) {
+                case "civilwar_add":
+                    await CivilWarRoleAdd(component);
+                    break;
+                case "civilwar_remove":
+                    await CivilWarRoleRemove(component);
+                    break;
                 case "civilwar_team_first":
-                    CivilWarRoleAdd(component, true);
-                    await component.RespondAsync("**1팀** 역할이 부여되었습니다.", ephemeral: true);
+                    await CivilWarTeamRoleAdd(component, true);
                     break;
                 case "civilwar_team_second":
-                    CivilWarRoleAdd(component, false);
-                    await component.RespondAsync("**2팀** 역할이 부여되었습니다.", ephemeral: true);
+                    await CivilWarTeamRoleAdd(component, false);
                     break;
-                case "civilwar_team_release":
-                    CivilWarRoleRemove(component);
-                    await component.RespondAsync("팀 역할이 해제되었습니다.", ephemeral: true);
+                case "civilwar_team_remove":
+                    await CivilWarTeamRoleRemove(component);
                     break;
             }
         }
@@ -71,41 +75,82 @@ namespace IndigoBlueSplitBot {
             Console.WriteLine(msg.ToString());
             return Task.CompletedTask;
         }
-
-        private async Task CivilWarRoleAdd(SocketMessageComponent component, bool isFirstTeam) {
+        
+        private async Task CivilWarRoleAdd(SocketMessageComponent component) {
             var guild = ((SocketGuildChannel)component.Message.Channel).Guild;
             var user = ((SocketGuildUser)component.User);
             
-            var indigoBlueEmote = guild.Emotes.First(e => e.Name == "indigo_blue");
-            var indigoRedEmote = guild.Emotes.First(e => e.Name == "indigo_red");
+            var civilWarRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 참가자");
             
-            var firstTeamRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 1팀");
-            var secondTeamRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 2팀");
+            await user.AddRoleAsync(civilWarRole);
             
-            if (user.Roles.Contains(isFirstTeam ? secondTeamRole : firstTeamRole)) {
-                user.RemoveRoleAsync(isFirstTeam ? secondTeamRole : firstTeamRole);
-            }
-            
-            await user.AddRoleAsync(isFirstTeam ? firstTeamRole : secondTeamRole);
+            await component.RespondAsync("**내전 참가자** 역할이 부여되었습니다.", ephemeral: true);
         }
         
         private async Task CivilWarRoleRemove(SocketMessageComponent component) {
+            var guild = ((SocketGuildChannel)component.Channel).Guild;
+            var user = ((SocketGuildUser)component.User);
+            
+            var civilWarRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 참가자");
+            
+            if (user.Roles.Contains(civilWarRole) == false) {
+                await component.RespondAsync("내전에 참여하고 있지 않습니다.", ephemeral: true);
+                return;
+            }
+            
+            await user.RemoveRoleAsync(civilWarRole);
+            
+            await component.RespondAsync("**내전 참가자** 역할이 해제되었습니다.", ephemeral: true);
+        }
+
+        private async Task CivilWarTeamRoleAdd(SocketMessageComponent component, bool isFirstTeam) {
+            var guild = ((SocketGuildChannel)component.Channel).Guild;
+            var user = ((SocketGuildUser)component.User);
+            
+            var civilWarRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 참가자");
+            var firstTeamRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 1팀");
+            var secondTeamRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 2팀");
+            
+            if (user.Roles.Contains(civilWarRole) == false) {
+                await component.RespondAsync("내전 참가자가 아닙니다.\n공지를 확인 해 주세요.", ephemeral: true);
+                return;
+            }
+            
+            if (user.Roles.Contains(isFirstTeam ? secondTeamRole : firstTeamRole)) {
+                await user.RemoveRoleAsync(isFirstTeam ? secondTeamRole : firstTeamRole);
+            }
+            
+            
+            await user.AddRoleAsync(isFirstTeam ? firstTeamRole : secondTeamRole);
+            
+            await component.RespondAsync("**" + (isFirstTeam ? "1팀" : "2팀") + "** 역할이 부여되었습니다.", ephemeral: true);
+        }
+        
+        private async Task CivilWarTeamRoleRemove(SocketMessageComponent component) {
             var guild = ((SocketGuildChannel)component.Message.Channel).Guild;
             var user = ((SocketGuildUser)component.User);
             
-            var indigoBlueEmote = guild.Emotes.First(e => e.Name == "indigo_blue");
-            var indigoRedEmote = guild.Emotes.First(e => e.Name == "indigo_red");
-            
+            var civilWarRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 참가자");
             var firstTeamRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 1팀");
             var secondTeamRole = guild.Roles.FirstOrDefault(x => x.Name == "내전 2팀");
+            
+            if (user.Roles.Contains(civilWarRole) == false) {
+                component.RespondAsync("내전 참가자가 아닙니다.\n공지를 확인 해 주세요.", ephemeral: true);
+                return;
+            }
             
             if (user.Roles.Contains(firstTeamRole)) {
                 await user.RemoveRoleAsync(firstTeamRole);
             }
-            
-            if (user.Roles.Contains(secondTeamRole)) {
+            else if (user.Roles.Contains(secondTeamRole)) {
                 await user.RemoveRoleAsync(secondTeamRole);
             }
+            else {
+                component.RespondAsync("팀에 소속되어있지 않습니다.", ephemeral: true);
+                return;
+            }
+            
+            await component.RespondAsync("팀 역할이 해제되었습니다.", ephemeral: true);
         }
     }
 }

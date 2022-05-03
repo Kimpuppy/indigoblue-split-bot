@@ -104,6 +104,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BasicCommands.cs" />
     <Compile Include="CivilWarCommands.cs" />
     <Compile Include="IndigoBlueSplitBot.cs" />
     <Compile Include="Program.cs" />

@@ -9,9 +9,13 @@ namespace IndigoBlueSplitBot {
         private static IndigoBlueSplitBot bot;
         
         private static void Main(string[] args) {
-            bot = new IndigoBlueSplitBot();
-
+            Initialize();
+            
             bot.Main().GetAwaiter().GetResult();
+        }
+
+        private static void Initialize() {
+            bot = new IndigoBlueSplitBot();
         }
     }
 }
